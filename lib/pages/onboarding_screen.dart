@@ -14,36 +14,11 @@ class OnboardingScreen extends StatelessWidget {
           child: Column(
             children: [
               const Spacer(flex: 2),
-              Container(
+              Image.asset(
+                'assets/images/logo.png',
                 width: 140,
                 height: 140,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(35),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 30,
-                      spreadRadius: 0,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    'M',
-                    style: TextStyle(
-                      fontSize: 90,
-                      fontWeight: FontWeight.w700,
-                      foreground: Paint()
-                        ..shader = const LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [Color(0xFF003D82), Color(0xFF0066FF)],
-                        ).createShader(const Rect.fromLTWH(0, 0, 200, 200)),
-                    ),
-                  ),
-                ),
+                fit: BoxFit.contain,
               ),
               const SizedBox(height: 32),
               const Text(
@@ -72,7 +47,9 @@ class OnboardingScreen extends StatelessWidget {
                   onPressed: () {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => const HomeScreen()),
+                      MaterialPageRoute(
+                        builder: (context) => const HomeScreen(),
+                      ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -84,7 +61,7 @@ class OnboardingScreen extends StatelessWidget {
                     elevation: 0,
                   ),
                   child: const Text(
-                    'Lest get started',
+                    'Lets get started',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,

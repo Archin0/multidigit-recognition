@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'result_screen.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -14,6 +16,7 @@ class _CameraScreenState extends State<CameraScreen> {
   List<CameraDescription>? _cameras;
   bool _isInitialized = false;
   bool _isProcessing = false;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -104,6 +107,108 @@ class _CameraScreenState extends State<CameraScreen> {
         });
       }
     }
+  }
+
+  Future<void> _pickFromGallery() async {
+    if (_isProcessing) return;
+
+    try {
+      // Request permission
+      PermissionStatus status = await Permission.photos.status;
+      
+      if (status.isDenied) {
+        status = await Permission.photos.request();
+      }
+
+      // Jika permission ditolak
+      if (status.isDenied) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Izin akses galeri ditolak'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Jika permission ditolak permanen
+      if (status.isPermanentlyDenied) {
+        if (mounted) {
+          _showPermissionDialog();
+        }
+        return;
+      }
+
+      setState(() {
+        _isProcessing = true;
+      });
+
+      // Pick image from gallery
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 100,
+      );
+
+      if (image != null) {
+        // Simulasi proses deteksi
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        if (!mounted) return;
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ResultScreen(
+              imagePath: image.path,
+              detectedNumber: '567',
+              accuracy: 90,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error memilih gambar: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
+    }
+  }
+
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Izin Diperlukan'),
+          content: const Text(
+            'Aplikasi memerlukan izin akses galeri untuk memilih gambar. '
+            'Silakan buka pengaturan dan berikan izin.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                openAppSettings();
+              },
+              child: const Text('Buka Pengaturan'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -323,22 +428,25 @@ class _CameraScreenState extends State<CameraScreen> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       // Gallery button
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Container(
-                            color: Colors.grey[800],
-                            child: const Icon(
-                              Icons.image,
-                              color: Colors.white70,
-                              size: 24,
+                      GestureDetector(
+                        onTap: _pickFromGallery,
+                        child: Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              color: Colors.grey[800],
+                              child: const Icon(
+                                Icons.image,
+                                color: Colors.white70,
+                                size: 24,
+                              ),
                             ),
                           ),
                         ),
