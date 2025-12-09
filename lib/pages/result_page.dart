@@ -76,7 +76,6 @@ class _ResultPageState extends State<ResultPage> {
               //     height: 1.5,
               //   ),
               // ),
-
               const SizedBox(height: 24),
 
               // Gambar hasil scan
@@ -130,9 +129,9 @@ class _ResultPageState extends State<ResultPage> {
 
               if (recordedAt != null) const SizedBox(height: 16),
 
-              // Label Hasil Deteksi
+              // Label Hasil Pengenalan
               const Text(
-                'Hasil Deteksi:',
+                'Hasil Pengenalan:',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -159,9 +158,9 @@ class _ResultPageState extends State<ResultPage> {
 
               const SizedBox(height: 16),
 
-              // Akurasi Deteksi
+              // Akurasi Pengenalan
               const Text(
-                'Akurasi Deteksi:',
+                'Akurasi Pengenalan:',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -311,6 +310,29 @@ class _ResultPageState extends State<ResultPage> {
       return;
     }
 
+    // Tampilkan dialog konfirmasi kebenaran prediksi
+    final bool? isCorrect = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Verifikasi Hasil'),
+        content: const Text('Apakah hasil prediksi ini benar?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Salah'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.green),
+            child: const Text('Benar'),
+          ),
+        ],
+      ),
+    );
+
+    if (isCorrect == null) return; // User cancel dialog
+
     setState(() => _isSaving = true);
     final history = context.read<HistoryProvider>();
 
@@ -321,9 +343,10 @@ class _ResultPageState extends State<ResultPage> {
         accuracy: accuracy,
         captureSource: captureSource,
         recordedAt: recordedAt,
+        isCorrect: isCorrect,
       );
       if (!mounted) return;
-      _showSnack('Disimpan ke riwayat.');
+      _showSnack('Disimpan ke riwayat (${isCorrect ? "Benar" : "Salah"}).');
     } catch (error) {
       _showSnack('Gagal menyimpan riwayat: $error');
     } finally {

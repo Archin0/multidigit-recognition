@@ -8,6 +8,7 @@ class HistoryEntry extends HiveObject {
     required this.accuracy,
     required this.captureSource,
     required this.recordedAt,
+    this.isCorrect,
   });
 
   final String id;
@@ -16,6 +17,7 @@ class HistoryEntry extends HiveObject {
   final double accuracy;
   final String captureSource;
   final DateTime recordedAt;
+  final bool? isCorrect;
 }
 
 class HistoryEntryAdapter extends TypeAdapter<HistoryEntry> {
@@ -36,13 +38,14 @@ class HistoryEntryAdapter extends TypeAdapter<HistoryEntry> {
       accuracy: fields[3] as double,
       captureSource: fields[4] as String,
       recordedAt: fields[5] as DateTime,
+      isCorrect: fields[6] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, HistoryEntry obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -54,6 +57,8 @@ class HistoryEntryAdapter extends TypeAdapter<HistoryEntry> {
       ..writeByte(4)
       ..write(obj.captureSource)
       ..writeByte(5)
-      ..write(obj.recordedAt);
+      ..write(obj.recordedAt)
+      ..writeByte(6)
+      ..write(obj.isCorrect);
   }
 }

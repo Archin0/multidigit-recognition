@@ -288,7 +288,7 @@ class _ScanPageState extends State<ScanPage> {
                       Icon(Icons.check_circle, color: Colors.white, size: 20),
                       SizedBox(width: 8),
                       Text(
-                        'Deteksi!',
+                        'Pengenalan!',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,

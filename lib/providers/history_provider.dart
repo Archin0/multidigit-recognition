@@ -41,6 +41,7 @@ class HistoryProvider extends ChangeNotifier {
     required double accuracy,
     required String captureSource,
     required DateTime recordedAt,
+    bool? isCorrect,
   }) async {
     _isSaving = true;
     notifyListeners();
@@ -54,6 +55,7 @@ class HistoryProvider extends ChangeNotifier {
         accuracy: accuracy,
         captureSource: captureSource,
         recordedAt: recordedAt,
+        isCorrect: isCorrect,
       );
       await _box.add(entry);
       _entries = [entry, ..._entries];
@@ -74,5 +76,26 @@ class HistoryProvider extends ChangeNotifier {
     );
     await file.writeAsBytes(bytes, flush: true);
     return file.path;
+  }
+
+  Future<void> deleteEntries(List<HistoryEntry> entriesToDelete) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      for (final entry in entriesToDelete) {
+        // Hapus file gambar
+        final file = File(entry.imagePath);
+        if (await file.exists()) {
+          await file.delete();
+        }
+        // Hapus dari Hive
+        await entry.delete();
+      }
+      // Refresh list
+      _entries = _box.values.toList().reversed.toList();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }

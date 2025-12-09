@@ -30,14 +30,14 @@ void main() {
   testWidgets('Welcome page renders and navigates', (tester) async {
     await tester.pumpWidget(MyApp(historyBox: historyBox));
 
-    expect(find.text('Deteksi MultiDigit'), findsOneWidget);
+    expect(find.text('Pengenalan MultiDigit'), findsOneWidget);
 
     await tester.tap(find.text('Mulai!'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Deteksi Multidigit'), findsOneWidget);
+    expect(find.text('Pengenalan Multidigit'), findsOneWidget);
 
-    await tester.tap(find.text('Mulai Deteksi Multidigit'));
+    await tester.tap(find.text('Mulai Pengenalan Multidigit'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();

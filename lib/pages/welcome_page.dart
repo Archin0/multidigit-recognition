@@ -64,10 +64,10 @@ class _WelcomePageState extends State<WelcomePage>
     },
     {
       'name': 'Zilan Zalilan',
-      'image': 'assets/images/zilan.png',
+      'image': 'assets/images/zilan.jpg',
       'role': 'UI/UX Designer, Mobile Developer',
       'class': 'TI-3B',
-      'github': 'https://github.com/',
+      'github': 'https://github.com/Thesambala',
     },
   ];
 
@@ -133,7 +133,7 @@ class _WelcomePageState extends State<WelcomePage>
 
               // Judul
               const Text(
-                'Deteksi MultiDigit',
+                'Pengenalan MultiDigit',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
