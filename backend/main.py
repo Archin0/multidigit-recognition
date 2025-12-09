@@ -13,7 +13,7 @@ from app.recognizer import RecognitionError
 
 app = FastAPI(title="MultiDigit Recognition Backend")
 
-# Konfigurasi CORS supaya device mobile bisa mengakses server lokal
+# Konfigurasi CORS untuk akses dari mobile device (Local & Cloud)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
