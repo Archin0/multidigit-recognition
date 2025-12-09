@@ -28,7 +28,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => HistoryProvider(historyBox)),
       ],
       child: MaterialApp(
-        title: 'Deteksi MultiDigit',
+        title: 'Pengenalan MultiDigit',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(primarySwatch: Colors.blue, fontFamily: 'Roboto'),
         home: const WelcomePage(),

@@ -10,7 +10,7 @@ A Flutter-driven mobile experience for mendeteksi tulisan tangan multidigit.
 
 ## Alur Pengguna
 
-1. Aplikasi dibuka dan menampilkan halaman home berisi penjelasan proyek serta tombol "Mulai Deteksi Multidigit".
+1. Aplikasi dibuka dan menampilkan halaman home berisi penjelasan proyek serta tombol "Mulai Pengenalan Multidigit".
 2. Tombol memindahkan pengguna ke layar kamera dengan guide overlay hijau berformat persegi panjang. Pengguna dapat menekan tombol capture atau memilih ikon galeri.
 3. Setelah foto dipilih/capture, gambar dipreview dan pengguna melakukan crop agar hanya area angka yang terpilih yang akan dikirimkan ke backend.
 4. Backend menerima hasil crop, menjalankan preprocessing + model SVM, lalu mengembalikan string prediksi serta skor akurasi.

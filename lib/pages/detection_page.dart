@@ -69,7 +69,7 @@ class DetectionPage extends StatelessWidget {
             children: [
               // Judul
               const Text(
-                'Deteksi Multidigit',
+                'Pengenalan Multidigit',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -81,7 +81,7 @@ class DetectionPage extends StatelessWidget {
 
               // Deskripsi
               const Text(
-                'Mengenali angka yang terdiri dari beberapa digit sekaligus langsung dari kamera. Membantu pembacaan angka secara cepat, otomatis, dan konsisten.',
+                'Mengenali tulisan tangan angka yang terdiri dari beberapa digit sekaligus langsung dari kamera ataupun unggahan foto. Membantu pembacaan angka secara cepat, otomatis, dan konsisten.',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.black54,
@@ -133,7 +133,7 @@ class DetectionPage extends StatelessWidget {
 
               const Spacer(),
 
-              // Tombol Mulai Deteksi
+              // Tombol Mulai Pengenalan
               SizedBox(
                 width: double.infinity,
                 height: 56,
@@ -141,7 +141,7 @@ class DetectionPage extends StatelessWidget {
                   onPressed: () => _onStartDetection(context),
                   icon: const Icon(Icons.camera_alt, color: Colors.white),
                   label: const Text(
-                    'Mulai Deteksi Multidigit',
+                    'Mulai Pengenalan Multidigit',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
