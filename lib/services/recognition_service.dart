@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:ui' show Size;
 
 import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:image/image.dart' as img;
 
 import '../config/api_config.dart';
 
@@ -12,12 +14,14 @@ class RecognitionResponse {
     required this.accuracy,
     required this.processingTimeMs,
     this.imageUrl,
+    this.pipeline,
   });
 
   final String prediction;
   final double accuracy;
   final int processingTimeMs;
   final String? imageUrl;
+  final RecognitionPipeline? pipeline;
 
   factory RecognitionResponse.fromJson(Map<String, dynamic> json) {
     return RecognitionResponse(
@@ -25,7 +29,167 @@ class RecognitionResponse {
       accuracy: (json['accuracy'] ?? 0).toDouble(),
       processingTimeMs: json['processing_time_ms'] ?? 0,
       imageUrl: json['image_url']?.toString(),
+      pipeline: json['pipeline'] is Map<String, dynamic>
+          ? RecognitionPipeline.fromJson(
+              json['pipeline'] as Map<String, dynamic>,
+            )
+          : null,
     );
+  }
+}
+
+class RecognitionPipeline {
+  RecognitionPipeline({
+    required this.stages,
+    required this.digitCrops,
+    required this.summary,
+  });
+
+  final List<PipelineStage> stages;
+  final List<DigitCropVisual> digitCrops;
+  final PipelineSummary summary;
+
+  bool get hasVisuals => stages.isNotEmpty || digitCrops.isNotEmpty;
+
+  factory RecognitionPipeline.fromJson(Map<String, dynamic> json) {
+    final List<PipelineStage> stageList = [];
+    final rawStages = json['stages'];
+    if (rawStages is List) {
+      for (final entry in rawStages) {
+        if (entry is Map<String, dynamic>) {
+          stageList.add(PipelineStage.fromJson(entry));
+        }
+      }
+    }
+
+    final List<DigitCropVisual> cropList = [];
+    final rawCrops = json['digit_crops'];
+    if (rawCrops is List) {
+      for (final entry in rawCrops) {
+        if (entry is Map<String, dynamic>) {
+          cropList.add(DigitCropVisual.fromJson(entry));
+        }
+      }
+    }
+
+    return RecognitionPipeline(
+      stages: stageList,
+      digitCrops: cropList,
+      summary: PipelineSummary.fromJson(
+        json['summary'] as Map<String, dynamic>? ?? const {},
+      ),
+    );
+  }
+}
+
+class PipelineStage {
+  PipelineStage({
+    required this.key,
+    required this.title,
+    required this.description,
+    required this.imageBytes,
+    this.naturalSize,
+  });
+
+  final String key;
+  final String title;
+  final String description;
+  final Uint8List imageBytes;
+  final Size? naturalSize;
+
+  double? get aspectRatio {
+    final size = naturalSize;
+    if (size == null || size.width <= 0 || size.height <= 0) {
+      return null;
+    }
+    return size.width / size.height;
+  }
+
+  factory PipelineStage.fromJson(Map<String, dynamic> json) {
+    final bytes = _decodeBase64Image(json['image']?.toString());
+    Size? intrinsicSize;
+    if (bytes.isNotEmpty) {
+      final decoded = img.decodeImage(bytes);
+      if (decoded != null && decoded.width > 0 && decoded.height > 0) {
+        intrinsicSize = Size(
+          decoded.width.toDouble(),
+          decoded.height.toDouble(),
+        );
+      }
+    }
+
+    return PipelineStage(
+      key: json['key']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      imageBytes: bytes,
+      naturalSize: intrinsicSize,
+    );
+  }
+}
+
+class DigitCropVisual {
+  DigitCropVisual({
+    required this.index,
+    required this.label,
+    required this.confidence,
+    required this.imageBytes,
+  });
+
+  final int index;
+  final String label;
+  final double confidence;
+  final Uint8List imageBytes;
+
+  String get caption => 'Digit ${index + 1}: $label';
+
+  factory DigitCropVisual.fromJson(Map<String, dynamic> json) {
+    return DigitCropVisual(
+      index: json['index'] is int
+          ? json['index'] as int
+          : int.tryParse(json['index']?.toString() ?? '0') ?? 0,
+      label: json['label']?.toString() ?? '-',
+      confidence: (json['confidence'] ?? 0).toDouble(),
+      imageBytes: _decodeBase64Image(json['image']?.toString()),
+    );
+  }
+}
+
+class PipelineSummary {
+  const PipelineSummary({
+    required this.prediction,
+    required this.accuracy,
+    required this.processingTimeMs,
+    required this.digitCount,
+  });
+
+  final String prediction;
+  final double accuracy;
+  final int processingTimeMs;
+  final int digitCount;
+
+  factory PipelineSummary.fromJson(Map<String, dynamic> json) {
+    return PipelineSummary(
+      prediction: json['prediction']?.toString() ?? '-',
+      accuracy: (json['accuracy'] ?? 0).toDouble(),
+      processingTimeMs: json['processing_time_ms'] is int
+          ? json['processing_time_ms'] as int
+          : int.tryParse(json['processing_time_ms']?.toString() ?? '0') ?? 0,
+      digitCount: json['digit_count'] is int
+          ? json['digit_count'] as int
+          : int.tryParse(json['digit_count']?.toString() ?? '0') ?? 0,
+    );
+  }
+}
+
+Uint8List _decodeBase64Image(String? payload) {
+  if (payload == null || payload.isEmpty) {
+    return Uint8List(0);
+  }
+  try {
+    return base64Decode(payload);
+  } catch (_) {
+    return Uint8List(0);
   }
 }
 

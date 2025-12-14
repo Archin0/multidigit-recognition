@@ -62,6 +62,7 @@ async def create_recognition(
     capture_source: str = Form("unknown"),
     timestamp: Optional[str] = Form(None),
     crop_box: Optional[str] = Form(None),
+    expected_digits: Optional[int] = Form(None),
 ):
     if not image:
         raise HTTPException(status_code=400, detail="Image file is required")
@@ -78,7 +79,7 @@ async def create_recognition(
         buffer.write(contents)
 
     try:
-        recognition = recognizer.predict(contents)
+        recognition = recognizer.predict(contents, expected_digits=expected_digits)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     except RecognitionError as exc:
