@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../providers/capture_provider.dart';
 import '../providers/history_provider.dart';
 import '../services/recognition_service.dart';
+import 'history_page.dart';
 
 class ResultPage extends StatefulWidget {
   final File? image;
@@ -41,6 +42,26 @@ class _ResultPageState extends State<ResultPage> {
     final recordedAt = capture.predictionTimestamp;
     final hasResult = displayNumber != '---';
     final pipeline = capture.pipeline;
+    final historyEntry = recordedAt != null
+        ? history.entryForTimestamp(recordedAt)
+        : null;
+    final bool alreadySaved = historyEntry != null;
+    final bool? savedVerdict = historyEntry?.isCorrect;
+    final String savedLabelText = savedVerdict == true
+        ? 'Benar'
+        : savedVerdict == false
+        ? 'Salah'
+        : 'Tersimpan';
+    final Color savedLabelColor = savedVerdict == true
+        ? const Color(0xFF2E7D32)
+        : savedVerdict == false
+        ? const Color(0xFFC62828)
+        : const Color(0xFF546E7A);
+    final IconData savedLabelIcon = savedVerdict == true
+        ? Icons.verified
+        : savedVerdict == false
+        ? Icons.error_outline
+        : Icons.history_edu;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -159,15 +180,27 @@ class _ResultPageState extends State<ResultPage> {
               if (pipeline != null && pipeline.hasVisuals) ...[
                 _buildPipelineToggleCard(),
                 const SizedBox(height: 16),
-                AnimatedCrossFade(
-                  firstChild: const SizedBox.shrink(),
-                  secondChild: _buildPipelineSection(pipeline),
-                  crossFadeState: _showPipeline
-                      ? CrossFadeState.showSecond
-                      : CrossFadeState.showFirst,
+                AnimatedSwitcher(
                   duration: const Duration(milliseconds: 350),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  transitionBuilder: (child, animation) => FadeTransition(
+                    opacity: animation,
+                    child: SizeTransition(
+                      sizeFactor: animation,
+                      axisAlignment: -1,
+                      child: child,
+                    ),
+                  ),
+                  child: _showPipeline
+                      ? Container(
+                          key: const ValueKey('pipeline-visible'),
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: _buildPipelineSection(pipeline),
+                        )
+                      : const SizedBox.shrink(key: ValueKey('pipeline-hidden')),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
               ],
 
               const SizedBox(height: 8),
@@ -251,32 +284,56 @@ class _ResultPageState extends State<ResultPage> {
               SizedBox(
                 width: double.infinity,
                 height: 56,
-                child: OutlinedButton.icon(
-                  onPressed: hasResult && !_isSaving && !history.isSaving
-                      ? () => _saveToHistory(
-                          previewBytes,
-                          displayNumber,
-                          displayAccuracy,
-                          captureSource,
-                          recordedAt,
-                        )
-                      : null,
-                  icon: const Icon(Icons.save, color: Color(0xFF1E88E5)),
-                  label: const Text(
-                    'Simpan ke Riwayat',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E88E5),
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFF1E88E5), width: 2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
-                    ),
-                  ),
-                ),
+                child: alreadySaved
+                    ? ElevatedButton.icon(
+                        onPressed: null,
+                        icon: Icon(savedLabelIcon, color: Colors.white),
+                        label: Text(
+                          'Ditandai sebagai $savedLabelText',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          backgroundColor: savedLabelColor,
+                          disabledBackgroundColor: savedLabelColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28),
+                          ),
+                        ),
+                      )
+                    : OutlinedButton.icon(
+                        onPressed: hasResult && !_isSaving && !history.isSaving
+                            ? () => _saveToHistory(
+                                previewBytes,
+                                displayNumber,
+                                displayAccuracy,
+                                captureSource,
+                                recordedAt,
+                              )
+                            : null,
+                        icon: const Icon(Icons.save, color: Color(0xFF1E88E5)),
+                        label: const Text(
+                          'Simpan ke Riwayat',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1E88E5),
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(
+                            color: Color(0xFF1E88E5),
+                            width: 2,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28),
+                          ),
+                        ),
+                      ),
               ),
             ],
           ),
@@ -289,49 +346,26 @@ class _ResultPageState extends State<ResultPage> {
     const accent = Color(0xFF0D47A1);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(
         color: const Color(0xFFF1F4FF),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFD5E2FF)),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Lihat Selengkapnya',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Tampilkan visual tiap tahap preprocessing dan segmentasi.',
-                  style: TextStyle(color: Colors.black54),
-                ),
-              ],
+      child: Center(
+        child: TextButton.icon(
+          onPressed: () => setState(() => _showPipeline = !_showPipeline),
+          style: TextButton.styleFrom(
+            foregroundColor: accent,
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
             ),
           ),
-          const SizedBox(width: 12),
-          TextButton.icon(
-            onPressed: () => setState(() => _showPipeline = !_showPipeline),
-            style: TextButton.styleFrom(
-              foregroundColor: accent,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
-            icon: Icon(_showPipeline ? Icons.visibility_off : Icons.visibility),
-            label: Text(_showPipeline ? 'Sembunyikan' : 'Lihat selengkapnya'),
-          ),
-        ],
+          icon: Icon(_showPipeline ? Icons.visibility_off : Icons.visibility),
+          label: const Text('Lihat Selengkapnya'),
+        ),
       ),
     );
   }
@@ -492,29 +526,127 @@ class _ResultPageState extends State<ResultPage> {
     DateTime? recordedAt,
   ) async {
     if (previewBytes == null || recordedAt == null) {
-      _showSnack('Gambar atau waktu deteksi tidak tersedia.');
+      _showSnack(
+        'Gambar atau waktu deteksi tidak tersedia.',
+        accentColor: const Color(0xFFF57C00),
+        icon: Icons.warning_amber_rounded,
+      );
       return;
     }
 
     // Tampilkan dialog konfirmasi kebenaran prediksi
     final bool? isCorrect = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Verifikasi Hasil'),
-        content: const Text('Apakah hasil prediksi ini benar?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Salah'),
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.green),
-            child: const Text('Benar'),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 32,
+            vertical: 24,
           ),
-        ],
-      ),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: const Color(0xFFD5E2FF)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x1F0D47A1),
+                  blurRadius: 30,
+                  offset: Offset(0, 18),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFFE3F2FD),
+                  ),
+                  child: const Icon(
+                    Icons.verified_user,
+                    size: 34,
+                    color: Color(0xFF0D47A1),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  'Verifikasi Hasil',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF0D47A1),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Apakah prediksi angka ini sudah sesuai dengan tampilan di gambar?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFDD2C00),
+                          side: const BorderSide(
+                            color: Color(0xFFDD2C00),
+                            width: 1.5,
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                        child: const Text(
+                          'Tidak Sesuai',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1E88E5),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                        child: const Text(
+                          'Sudah Benar',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
 
     if (isCorrect == null) return; // User cancel dialog
@@ -532,9 +664,25 @@ class _ResultPageState extends State<ResultPage> {
         isCorrect: isCorrect,
       );
       if (!mounted) return;
-      _showSnack('Disimpan ke riwayat (${isCorrect ? "Benar" : "Salah"}).');
+      _showSnack(
+        'Disimpan ke riwayat (${isCorrect ? "Benar" : "Salah"}).',
+        accentColor: isCorrect
+            ? const Color(0xFF2E7D32)
+            : const Color(0xFFC62828),
+        icon: isCorrect ? Icons.check_circle_outline : Icons.error_outline,
+        actionLabel: 'Buka Riwayat',
+        onAction: () {
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const HistoryPage()));
+        },
+      );
     } catch (error) {
-      _showSnack('Gagal menyimpan riwayat: $error');
+      _showSnack(
+        'Gagal menyimpan riwayat: $error',
+        accentColor: const Color(0xFFC62828),
+        icon: Icons.error_outline,
+      );
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -542,11 +690,57 @@ class _ResultPageState extends State<ResultPage> {
     }
   }
 
-  void _showSnack(String message) {
+  void _showSnack(
+    String message, {
+    String? actionLabel,
+    VoidCallback? onAction,
+    Color accentColor = const Color(0xFF0D47A1),
+    IconData icon = Icons.info_outline,
+  }) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
+    final messenger = ScaffoldMessenger.of(context);
+    messenger
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.white,
+          elevation: 8,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          content: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: accentColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  message,
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          action: actionLabel != null && onAction != null
+              ? SnackBarAction(
+                  label: actionLabel,
+                  onPressed: onAction,
+                  textColor: accentColor,
+                )
+              : null,
+        ),
+      );
   }
 }
 
