@@ -21,6 +21,20 @@ class HistoryProvider extends ChangeNotifier {
   bool get isEmpty => _entries.isEmpty;
   bool get isLoading => _isLoading;
 
+  HistoryEntry? entryForTimestamp(DateTime timestamp) {
+    try {
+      return _entries.firstWhere(
+        (entry) => entry.recordedAt.isAtSameMomentAs(timestamp),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool hasEntryForTimestamp(DateTime timestamp) {
+    return entryForTimestamp(timestamp) != null;
+  }
+
   Future<void> refresh() async {
     _entries = _box.values.toList().reversed.toList();
     notifyListeners();

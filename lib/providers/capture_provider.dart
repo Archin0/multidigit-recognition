@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../services/recognition_service.dart';
+
 class CaptureProvider extends ChangeNotifier {
   Uint8List? _originalBytes;
   Uint8List? _croppedBytes;
@@ -9,6 +11,7 @@ class CaptureProvider extends ChangeNotifier {
   String? _errorMessage;
   String? _captureSource;
   DateTime? _predictionTimestamp;
+  RecognitionPipeline? _pipeline;
 
   Uint8List? get originalBytes => _originalBytes;
   Uint8List? get croppedBytes => _croppedBytes;
@@ -18,6 +21,7 @@ class CaptureProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   String? get captureSource => _captureSource;
   DateTime? get predictionTimestamp => _predictionTimestamp;
+  RecognitionPipeline? get pipeline => _pipeline;
 
   void setOriginal(Uint8List bytes) {
     _originalBytes = bytes;
@@ -41,6 +45,11 @@ class CaptureProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setPipeline(RecognitionPipeline? pipeline) {
+    _pipeline = pipeline;
+    notifyListeners();
+  }
+
   void setUploading(bool value) {
     _isUploading = value;
     notifyListeners();
@@ -60,6 +69,7 @@ class CaptureProvider extends ChangeNotifier {
     _errorMessage = null;
     _captureSource = null;
     _predictionTimestamp = null;
+    _pipeline = null;
     notifyListeners();
   }
 }

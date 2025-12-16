@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:crop_your_image/crop_your_image.dart';
@@ -39,6 +40,7 @@ class _CropPageState extends State<CropPage> {
     capture
       ..setError(null)
       ..setUploading(true)
+      ..setPipeline(null)
       ..setCaptureSource('Galeri - Penyimpanan');
 
     try {
@@ -48,6 +50,7 @@ class _CropPageState extends State<CropPage> {
       );
 
       capture.setPrediction(response.prediction, response.accuracy);
+      capture.setPipeline(response.pipeline);
 
       if (!mounted) return;
       await Navigator.pushReplacement(
@@ -117,16 +120,37 @@ class _CropPageState extends State<CropPage> {
                       controller: _cropController,
                       image: widget.initialBytes,
                       baseColor: Colors.black,
-                      maskColor: Colors.black.withValues(alpha: 0.5),
-                      aspectRatio: 3,
-                      cornerDotBuilder: (size, index) => Container(
-                        width: size,
-                        height: size,
-                        decoration: BoxDecoration(
-                          color: Colors.greenAccent,
-                          borderRadius: BorderRadius.circular(size / 2),
-                        ),
-                      ),
+                      maskColor: Colors.black.withValues(alpha: 0.55),
+                      cornerDotBuilder: (size, index) {
+                        final baseSize = math.max(10.0, size * 0.45);
+                        return Container(
+                          width: size,
+                          height: size,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E88E5).withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(size / 2),
+                          ),
+                          child: Container(
+                            width: baseSize,
+                            height: baseSize,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(baseSize / 2),
+                              border: Border.all(
+                                color: const Color(0xFF1E88E5),
+                                width: 1.6,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.18),
+                                  blurRadius: 3,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                       onCropped: _onCropped,
                     ),
                   ),

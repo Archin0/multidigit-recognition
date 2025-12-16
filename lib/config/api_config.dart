@@ -7,6 +7,6 @@ class ApiConfig {
   // flutter build apk --release --dart-define=RECOGNITION_BASE_URL=http://YOUR_IP:8000
   static const String recognitionBaseUrl = String.fromEnvironment(
     'RECOGNITION_BASE_URL',
-    defaultValue: 'https://multidigit-recognition.onrender.com',
+    defaultValue: 'http://192.168.18.62:8000',
   );
 }

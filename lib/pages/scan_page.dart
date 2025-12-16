@@ -147,6 +147,7 @@ class _ScanPageState extends State<ScanPage> {
     final autoResult = ImageCropUtils.autoCropToAspect(originalBytes);
     final Uint8List payloadBytes = autoResult?.bytes ?? originalBytes;
     capture.setCropped(payloadBytes);
+    capture.setPipeline(null);
     capture.setUploading(true);
 
     try {
@@ -156,6 +157,7 @@ class _ScanPageState extends State<ScanPage> {
         cropBox: autoResult?.cropBox,
       );
       capture.setPrediction(response.prediction, response.accuracy);
+      capture.setPipeline(response.pipeline);
 
       if (!mounted) return;
       await Navigator.push(
