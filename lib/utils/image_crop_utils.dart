@@ -44,7 +44,6 @@ class ImageCropUtils {
       width: cropWidth,
       height: cropHeight,
     );
-
     final encoded = Uint8List.fromList(img.encodeJpg(cropped, quality: 90));
 
     return CroppedImageResult(

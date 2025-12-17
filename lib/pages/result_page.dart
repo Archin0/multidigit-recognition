@@ -14,6 +14,7 @@ class ResultPage extends StatefulWidget {
   final Uint8List? imageBytes;
   final String? detectedNumber;
   final double? accuracy;
+  final String? modelName;
 
   const ResultPage({
     super.key,
@@ -21,6 +22,7 @@ class ResultPage extends StatefulWidget {
     this.imageBytes,
     this.detectedNumber,
     this.accuracy,
+    this.modelName,
   });
 
   @override
@@ -40,6 +42,10 @@ class _ResultPageState extends State<ResultPage> {
     final displayAccuracy = widget.accuracy ?? capture.accuracy ?? 0;
     final captureSource = capture.captureSource ?? '-';
     final recordedAt = capture.predictionTimestamp;
+    final rawModelName = widget.modelName ?? capture.modelName;
+    final modelLabel = (rawModelName != null && rawModelName.trim().isNotEmpty)
+        ? rawModelName.trim()
+        : 'Tidak diketahui';
     final hasResult = displayNumber != '---';
     final pipeline = capture.pipeline;
     final historyEntry = recordedAt != null
@@ -142,11 +148,21 @@ class _ResultPageState extends State<ResultPage> {
                     color: Colors.blueGrey[50],
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildMetaTile('Sumber', captureSource),
-                      _buildMetaTile('Diproses', _formatTimestamp(recordedAt)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildMetaTile('Sumber', captureSource),
+                          _buildMetaTile(
+                            'Diproses',
+                            _formatTimestamp(recordedAt),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      _buildMetaTile('Model Klasifikasi', modelLabel),
                     ],
                   ),
                 ),
@@ -174,39 +190,6 @@ class _ResultPageState extends State<ResultPage> {
                   color: Colors.black87,
                 ),
               ),
-
-              const SizedBox(height: 16),
-
-              if (pipeline != null && pipeline.hasVisuals) ...[
-                _buildPipelineToggleCard(),
-                const SizedBox(height: 16),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 350),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  transitionBuilder: (child, animation) => FadeTransition(
-                    opacity: animation,
-                    child: SizeTransition(
-                      sizeFactor: animation,
-                      axisAlignment: -1,
-                      child: child,
-                    ),
-                  ),
-                  child: _showPipeline
-                      ? Container(
-                          key: const ValueKey('pipeline-visible'),
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: _buildPipelineSection(pipeline),
-                        )
-                      : const SizedBox.shrink(key: ValueKey('pipeline-hidden')),
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              const SizedBox(height: 8),
-
-              // Divider
-              Divider(color: Colors.grey[300], thickness: 1),
 
               const SizedBox(height: 16),
 
@@ -253,6 +236,41 @@ class _ResultPageState extends State<ResultPage> {
                   ),
                 ],
               ),
+
+              const SizedBox(height: 16),
+
+              if (pipeline != null && pipeline.hasVisuals) ...[
+                _buildPipelineToggleCard(),
+                const SizedBox(height: 16),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 350),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  transitionBuilder: (child, animation) => FadeTransition(
+                    opacity: animation,
+                    child: SizeTransition(
+                      sizeFactor: animation,
+                      axisAlignment: -1,
+                      child: child,
+                    ),
+                  ),
+                  child: _showPipeline
+                      ? Container(
+                          key: const ValueKey('pipeline-visible'),
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: _buildPipelineSection(pipeline),
+                        )
+                      : const SizedBox.shrink(key: ValueKey('pipeline-hidden')),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              const SizedBox(height: 16),
+
+              // Divider
+              Divider(color: Colors.grey[300], thickness: 1),
+
+              const SizedBox(height: 16),
 
               // Tombol Scan Lagi
               SizedBox(

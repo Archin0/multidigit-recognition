@@ -12,6 +12,34 @@ import numpy as np
 from skimage.feature import hog
 
 
+_MODELS_DIR = Path(__file__).parent.parent / "models"
+_DEFAULT_SVM_MODEL = _MODELS_DIR / "svm_digit_classifier.joblib"
+_DEFAULT_KNN_MODEL = _MODELS_DIR / "knn_digit_classifier.joblib"
+_SVM_LABEL = "Support Vector Machine"
+_KNN_LABEL = "K-Nearest Neighbors"
+
+
+def _extract_pipeline_components(model_obj):
+    """Return (estimator, scaler) if the stored model is an sklearn Pipeline."""
+    named_steps = getattr(model_obj, "named_steps", None)
+    steps = getattr(model_obj, "steps", None)
+    if isinstance(named_steps, dict) and named_steps:
+        scaler = named_steps.get("scaler")
+        estimator = (
+            named_steps.get("knn")
+            or named_steps.get("svm")
+            or named_steps.get("model")
+            or list(named_steps.values())[-1]
+        )
+        return estimator, scaler
+    if isinstance(steps, list) and steps:
+        # fallback: assume first step is transformer, last step is estimator
+        maybe_scaler = steps[0][1] if hasattr(steps[0][1], "transform") else None
+        estimator = steps[-1][1]
+        return estimator, maybe_scaler
+    return model_obj, None
+
+
 @dataclass
 class DigitComponent:
     label: str
@@ -29,6 +57,7 @@ class RecognitionResult:
     processing_time_ms: int
     digits: List[DigitComponent]
     pipeline: Optional[dict] = None
+    model_name: Optional[str] = None
 
     def to_dict(self) -> dict:
         payload = {
@@ -39,6 +68,8 @@ class RecognitionResult:
         }
         if self.pipeline is not None:
             payload["pipeline"] = self.pipeline
+        if self.model_name is not None:
+            payload["model_name"] = self.model_name
         return payload
 
 
@@ -48,14 +79,13 @@ class RecognitionError(Exception):
 
 class DigitRecognizer:
     def __init__(self, model_path: Optional[str] = None, eager: bool = True):
-        default_path = Path(__file__).parent.parent / "models" / "svm_digit_classifier.joblib"
-        self.model_path = Path(model_path or os.getenv("MODEL_PATH", default_path))
         self._model = None
         self._scaler = None
         self._hog_params: Optional[dict] = None
         self._loaded_at: Optional[float] = None
-        if eager:
-            self.ensure_ready()
+        self._model_label: Optional[str] = None
+        self.model_path = _DEFAULT_SVM_MODEL
+        self.load_svm_model(model_path=model_path, eager=eager)
 
     @property
     def is_ready(self) -> bool:
@@ -67,17 +97,54 @@ class DigitRecognizer:
             return None
         return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(self._loaded_at))
 
+    @property
+    def model_label(self) -> str:
+        return self._model_label or _SVM_LABEL
+
+    def _switch_model(self, target_path: Path, eager: bool) -> None:
+        resolved = Path(target_path)
+        self.model_path = resolved
+        self._model = None
+        self._scaler = None
+        self._hog_params = None
+        self._loaded_at = None
+        if eager:
+            self.ensure_ready()
+
+    def load_svm_model(self, model_path: Optional[str] = None, eager: bool = True) -> None:
+        """Load the default SVM classifier artifact for the recognition pipeline."""
+        default_path = _DEFAULT_SVM_MODEL
+        resolved = Path(model_path or os.getenv("MODEL_PATH", default_path))
+        self._model_label = _SVM_LABEL
+        self._switch_model(resolved, eager)
+
+    def load_knn_model(self, model_path: Optional[str] = None, eager: bool = True) -> None:
+        """Load the alternative KNN classifier so predictions can use a different model."""
+        default_path = _DEFAULT_KNN_MODEL
+        resolved = Path(model_path or os.getenv("MODEL_PATH_KNN", default_path))
+        self._model_label = _KNN_LABEL
+        self._switch_model(resolved, eager)
+
     def ensure_ready(self) -> None:
         if self.is_ready:
             return
         if not self.model_path.exists():
+            env_hint = "MODEL_PATH_KNN" if self.model_label == _KNN_LABEL else "MODEL_PATH"
             raise FileNotFoundError(
                 f"Model artifact tidak ditemukan di {self.model_path}. "
-                "Set variabel lingkungan MODEL_PATH ke file .joblib yang benar.",
+                f"Set variabel lingkungan {env_hint} ke file .joblib yang benar.",
             )
         artifact = joblib.load(self.model_path)
-        self._model = artifact.get("model")
-        self._scaler = artifact.get("scaler")
+        model_entry = artifact.get("model")
+        scaler_entry = artifact.get("scaler")
+        estimator, pipeline_scaler = _extract_pipeline_components(model_entry)
+        if estimator is not None:
+            self._model = estimator
+            if scaler_entry is None and pipeline_scaler is not None:
+                scaler_entry = pipeline_scaler
+        else:
+            self._model = None
+        self._scaler = scaler_entry
         self._hog_params = artifact.get("hog_params")
         if self._model is None or self._scaler is None:
             raise RuntimeError(
@@ -181,6 +248,7 @@ class DigitRecognizer:
             processing_time_ms=processing_time_ms,
             digits=digit_components,
             pipeline=pipeline_payload,
+            model_name=self.model_label,
         )
 
 _DIGIT_CANVAS_SIZE = 28

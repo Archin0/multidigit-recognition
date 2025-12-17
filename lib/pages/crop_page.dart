@@ -10,9 +10,18 @@ import '../services/recognition_service.dart';
 import 'result_page.dart';
 
 class CropPage extends StatefulWidget {
-  const CropPage({super.key, required this.initialBytes});
+  const CropPage({
+    super.key,
+    required this.initialBytes,
+    required this.captureSourceLabel,
+    required this.submitCaptureSource,
+    this.initialCropBox,
+  });
 
   final Uint8List initialBytes;
+  final String captureSourceLabel;
+  final String submitCaptureSource;
+  final Map<String, int>? initialCropBox;
 
   @override
   State<CropPage> createState() => _CropPageState();
@@ -22,6 +31,49 @@ class _CropPageState extends State<CropPage> {
   final CropController _cropController = CropController();
   final RecognitionService _recognitionService = RecognitionService();
   bool _isCropping = false;
+  ImageBasedRect? _initialArea;
+
+  @override
+  void initState() {
+    super.initState();
+    _initialArea = _deriveInitialArea(widget.initialCropBox);
+    if (_initialArea != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _applyInitialArea());
+    }
+  }
+
+  void _applyInitialArea() {
+    if (_initialArea == null) {
+      return;
+    }
+    try {
+      _cropController.area = _initialArea!;
+    } catch (_) {
+      // Ignore invalid rect attempts; user can adjust manually.
+    }
+  }
+
+  ImageBasedRect? _deriveInitialArea(Map<String, int>? cropBox) {
+    if (cropBox == null) {
+      return null;
+    }
+    final x = cropBox['x'];
+    final y = cropBox['y'];
+    final width = cropBox['width'];
+    final height = cropBox['height'];
+    if (x == null || y == null || width == null || height == null) {
+      return null;
+    }
+    if (width <= 0 || height <= 0) {
+      return null;
+    }
+    return ImageBasedRect.fromLTWH(
+      x.toDouble(),
+      y.toDouble(),
+      width.toDouble(),
+      height.toDouble(),
+    );
+  }
 
   void _startCropping() {
     if (_isCropping) return;
@@ -41,16 +93,18 @@ class _CropPageState extends State<CropPage> {
       ..setError(null)
       ..setUploading(true)
       ..setPipeline(null)
-      ..setCaptureSource('Galeri - Penyimpanan');
+      ..setModelName(null)
+      ..setCaptureSource(widget.captureSourceLabel);
 
     try {
       final response = await _recognitionService.submit(
         imageBytes: bytes,
-        captureSource: 'gallery_manual',
+        captureSource: widget.submitCaptureSource,
       );
 
       capture.setPrediction(response.prediction, response.accuracy);
       capture.setPipeline(response.pipeline);
+      capture.setModelName(response.modelName);
 
       if (!mounted) return;
       await Navigator.pushReplacement(
@@ -60,6 +114,7 @@ class _CropPageState extends State<CropPage> {
             imageBytes: bytes,
             detectedNumber: response.prediction,
             accuracy: response.accuracy,
+            modelName: response.modelName,
           ),
         ),
       );

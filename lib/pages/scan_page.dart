@@ -9,10 +9,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/capture_provider.dart';
-import '../services/recognition_service.dart';
 import '../utils/image_crop_utils.dart';
 import 'crop_page.dart';
-import 'result_page.dart';
 
 class ScanPage extends StatefulWidget {
   const ScanPage({super.key});
@@ -23,7 +21,6 @@ class ScanPage extends StatefulWidget {
 
 class _ScanPageState extends State<ScanPage> {
   final ImagePicker _picker = ImagePicker();
-  final RecognitionService _recognitionService = RecognitionService();
   CameraController? _cameraController;
   Future<void>? _cameraInitFuture;
   bool _isDetected = false;
@@ -85,10 +82,31 @@ class _ScanPageState extends State<ScanPage> {
   Future<void> _openManualCropPage(Uint8List bytes) async {
     final capture = context.read<CaptureProvider>();
     capture.setOriginal(bytes);
+    await _navigateToCropPage(
+      initialBytes: bytes,
+      captureSourceLabel: 'Galeri - Penyimpanan',
+      submitCaptureSource: 'gallery_manual',
+      initialCropBox: null,
+    );
+  }
+
+  Future<void> _navigateToCropPage({
+    required Uint8List initialBytes,
+    required String captureSourceLabel,
+    required String submitCaptureSource,
+    required Map<String, int>? initialCropBox,
+  }) async {
     if (!mounted) return;
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => CropPage(initialBytes: bytes)),
+      MaterialPageRoute(
+        builder: (_) => CropPage(
+          initialBytes: initialBytes,
+          captureSourceLabel: captureSourceLabel,
+          submitCaptureSource: submitCaptureSource,
+          initialCropBox: initialCropBox,
+        ),
+      ),
     );
   }
 
@@ -142,49 +160,17 @@ class _ScanPageState extends State<ScanPage> {
     capture
       ..setOriginal(originalBytes)
       ..setError(null)
-      ..setCaptureSource('Tangkapan Kamera');
+      ..setPipeline(null)
+      ..setModelName(null);
 
     final autoResult = ImageCropUtils.autoCropToAspect(originalBytes);
-    final Uint8List payloadBytes = autoResult?.bytes ?? originalBytes;
-    capture.setCropped(payloadBytes);
-    capture.setPipeline(null);
-    capture.setUploading(true);
 
-    try {
-      final response = await _recognitionService.submit(
-        imageBytes: payloadBytes,
-        captureSource: 'camera-auto',
-        cropBox: autoResult?.cropBox,
-      );
-      capture.setPrediction(response.prediction, response.accuracy);
-      capture.setPipeline(response.pipeline);
-
-      if (!mounted) return;
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ResultPage(
-            imageBytes: payloadBytes,
-            detectedNumber: response.prediction,
-            accuracy: response.accuracy,
-          ),
-        ),
-      );
-    } on RecognitionException catch (error) {
-      capture.setError(error.message);
-      _showSnack(
-        error.message,
-        onRetry: () => _processAutoCapture(originalBytes),
-      );
-    } catch (error) {
-      capture.setError(error.toString());
-      _showSnack(
-        'Gagal mengirim gambar.',
-        onRetry: () => _processAutoCapture(originalBytes),
-      );
-    } finally {
-      capture.setUploading(false);
-    }
+    await _navigateToCropPage(
+      initialBytes: originalBytes,
+      captureSourceLabel: 'Tangkapan Kamera',
+      submitCaptureSource: 'camera-auto',
+      initialCropBox: autoResult?.cropBox,
+    );
   }
 
   void _showSnack(String message, {VoidCallback? onRetry}) {

@@ -15,6 +15,7 @@ class RecognitionResponse {
     required this.processingTimeMs,
     this.imageUrl,
     this.pipeline,
+    this.modelName,
   });
 
   final String prediction;
@@ -22,6 +23,7 @@ class RecognitionResponse {
   final int processingTimeMs;
   final String? imageUrl;
   final RecognitionPipeline? pipeline;
+  final String? modelName;
 
   factory RecognitionResponse.fromJson(Map<String, dynamic> json) {
     return RecognitionResponse(
@@ -34,6 +36,7 @@ class RecognitionResponse {
               json['pipeline'] as Map<String, dynamic>,
             )
           : null,
+      modelName: json['model_name']?.toString(),
     );
   }
 }

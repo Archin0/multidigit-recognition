@@ -26,7 +26,20 @@ UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
-recognizer = DigitRecognizer(model_path=os.getenv("MODEL_PATH"), eager=False)
+def _build_recognizer() -> DigitRecognizer:
+    """Factory so switching SVM<->kNN only requires toggling the blocks below."""
+    # === Konfigurasi default (SVM) ===
+    recognizer_instance = DigitRecognizer(model_path=os.getenv("MODEL_PATH"), eager=False)
+
+    # === Konfigurasi alternatif (kNN) ===
+    # Komentari blok SVM di atas dan aktifkan dua baris di bawah ini untuk memakai model kNN.
+    # recognizer_instance = DigitRecognizer(eager=False)
+    # recognizer_instance.load_knn_model(model_path=os.getenv("MODEL_PATH_KNN"), eager=True)
+
+    return recognizer_instance
+
+
+recognizer = _build_recognizer()
 storage = RecognitionStorage(Path(UPLOAD_DIR))
 
 
@@ -34,7 +47,7 @@ storage = RecognitionStorage(Path(UPLOAD_DIR))
 async def startup_event() -> None:
     try:
         recognizer.ensure_ready()
-        print("Model loaded successfully")
+        print(f"Model {recognizer.model_label} loaded successfully")
     except FileNotFoundError as exc:
         print(f"[WARN] {exc}")
     except Exception as exc:  # pragma: no cover - diagnostic only
@@ -52,6 +65,7 @@ def model_health():
         "model_path": str(recognizer.model_path),
         "ready": recognizer.is_ready,
         "last_loaded_at": recognizer.last_loaded_at,
+        "model_label": recognizer.model_label,
     }
 
 
