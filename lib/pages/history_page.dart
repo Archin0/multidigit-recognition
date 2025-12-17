@@ -16,6 +16,7 @@ class HistoryPage extends StatefulWidget {
 class _HistoryPageState extends State<HistoryPage> {
   bool _isDeleteMode = false;
   final Set<HistoryEntry> _selectedEntries = {};
+  final Set<String> _expandedEntryIds = {};
 
   void _toggleDeleteMode() {
     setState(() {
@@ -30,6 +31,16 @@ class _HistoryPageState extends State<HistoryPage> {
         _selectedEntries.remove(entry);
       } else {
         _selectedEntries.add(entry);
+      }
+    });
+  }
+
+  void _toggleImageVisibility(String entryId) {
+    setState(() {
+      if (_expandedEntryIds.contains(entryId)) {
+        _expandedEntryIds.remove(entryId);
+      } else {
+        _expandedEntryIds.add(entryId);
       }
     });
   }
@@ -240,11 +251,15 @@ class _HistoryPageState extends State<HistoryPage> {
                         itemBuilder: (context, index) {
                           final entry = history.entries[index];
                           final isCorrect = entry.isCorrect;
+                          final isExpanded = _expandedEntryIds.contains(
+                            entry.id,
+                          );
                           Color? statusColor;
                           if (isCorrect == true) statusColor = Colors.green[50];
                           if (isCorrect == false) statusColor = Colors.red[50];
 
                           return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               if (_isDeleteMode)
                                 Checkbox(
@@ -253,81 +268,146 @@ class _HistoryPageState extends State<HistoryPage> {
                                   activeColor: Colors.red,
                                 ),
                               Expanded(
-                                child: GestureDetector(
-                                  onTap: _isDeleteMode
-                                      ? () => _toggleSelection(entry)
-                                      : null,
-                                  child: Card(
-                                    color: statusColor,
-                                    child: ListTile(
-                                      leading: ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Image.file(
-                                          File(entry.imagePath),
-                                          width: 56,
-                                          height: 56,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) =>
-                                              Container(
-                                                width: 56,
-                                                height: 56,
-                                                color: Colors.grey[200],
-                                                alignment: Alignment.center,
-                                                child: const Icon(
-                                                  Icons.broken_image,
-                                                  color: Colors.grey,
-                                                ),
-                                              ),
-                                        ),
-                                      ),
-                                      title: Text(
-                                        'Hasil: ${entry.prediction}',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      subtitle: Column(
+                                child: Card(
+                                  color: statusColor,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(12),
+                                    onTap: _isDeleteMode
+                                        ? () => _toggleSelection(entry)
+                                        : null,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          Text(
-                                            '${entry.captureSource}',
-                                          ),
-                                          if (!_isDeleteMode)
-                                            Text(
-                                              '${_formatTimestamp(entry.recordedAt)}',
-                                            ),
-                                          if (isCorrect != null)
-                                            Text(
-                                              isCorrect
-                                                  ? 'Terverifikasi Benar'
-                                                  : 'Terverifikasi Salah',
-                                              style: TextStyle(
-                                                color: isCorrect
-                                                    ? Colors.green
-                                                    : Colors.red,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w500,
+                                          if (isExpanded) ...[
+                                            ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              child: Image.file(
+                                                File(entry.imagePath),
+                                                width: double.infinity,
+                                                fit: BoxFit.contain,
+                                                errorBuilder: (_, __, ___) =>
+                                                    Container(
+                                                      width: double.infinity,
+                                                      color: Colors.grey[200],
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            16,
+                                                          ),
+                                                      alignment:
+                                                          Alignment.center,
+                                                      child: const Icon(
+                                                        Icons.broken_image,
+                                                        color: Colors.grey,
+                                                        size: 32,
+                                                      ),
+                                                    ),
                                               ),
                                             ),
-                                        ],
-                                      ),
-                                      trailing: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          const Text(
-                                            'Akurasi',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.black54,
+                                            const SizedBox(height: 12),
+                                          ],
+                                          Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      'Hasil: ${entry.prediction}',
+                                                      style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 4),
+                                                    Text(entry.captureSource),
+                                                    if (!_isDeleteMode)
+                                                      Text(
+                                                        _formatTimestamp(
+                                                          entry.recordedAt,
+                                                        ),
+                                                      ),
+                                                    if (isCorrect != null)
+                                                      Text(
+                                                        isCorrect
+                                                            ? 'Terverifikasi Benar'
+                                                            : 'Terverifikasi Salah',
+                                                        style: TextStyle(
+                                                          color: isCorrect
+                                                              ? Colors.green
+                                                              : Colors.red,
+                                                          fontSize: 12,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                  ],
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.end,
+                                                children: [
+                                                  const Text(
+                                                    'Akurasi',
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: Colors.black54,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    '${entry.accuracy.toStringAsFixed(0)}%',
+                                                    style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: Colors.black87,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Divider(
+                                            color: Colors.black.withOpacity(
+                                              0.1,
                                             ),
                                           ),
-                                          Text(
-                                            '${entry.accuracy.toStringAsFixed(0)}%',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.black87,
+                                          GestureDetector(
+                                            onTap: () => _toggleImageVisibility(
+                                              entry.id,
+                                            ),
+                                            behavior: HitTestBehavior.opaque,
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 8,
+                                                  ),
+                                              child: Align(
+                                                alignment: Alignment.center,
+                                                child: Text(
+                                                  isExpanded
+                                                      ? 'Sembunyikan gambar'
+                                                      : 'Tampilkan gambar',
+                                                  style: TextStyle(
+                                                    color: _isDeleteMode
+                                                        ? Colors.black87
+                                                        : const Color(
+                                                            0xFF1E88E5,
+                                                          ),
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
                                             ),
                                           ),
                                         ],

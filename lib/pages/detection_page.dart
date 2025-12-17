@@ -51,10 +51,23 @@ class DetectionPage extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Icon(
-                  Icons.access_time_filled,
-                  color: Color(0xFF1E88E5),
-                  size: 22,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(
+                      Icons.access_time_filled,
+                      color: Color(0xFF1E88E5),
+                      size: 22,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'Riwayat',
+                      style: TextStyle(
+                        color: Color(0xFF1E88E5),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
